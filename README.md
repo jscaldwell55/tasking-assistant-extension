@@ -1,5 +1,6 @@
 Tasking Assistant Chrome Extension
-A Chrome extension that automates copying fields between browser tabs using centralized configuration via Google Docs. Perfect for teams working with tasking platforms (Outlier, Feather, Scale) who need to submit data to Google Forms or other web forms.
+
+A Chrome extension that automates copying fields between browser tabs using centralized configuration via Google Docs. 
 
 OVERVIEW
 
