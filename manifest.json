@@ -1,17 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Tasking Assistant",
-  "version": "1.0.0",
-  "description": "Copy fields from one browser tab to another based on configurable mapping",
+  "version": "1.1.0",
+  "description": "Copy fields between browser tabs with manual configuration",
   "permissions": [
     "tabs",
     "activeTab",
     "storage",
     "scripting"
-  ],
-  "host_permissions": [
-  "https://docs.google.com/*",
-  "https://*.google.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -22,12 +18,11 @@
     }
   },
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
@@ -36,13 +31,5 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
-  },
-  "minimum_chrome_version": "88",
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self'"
-  },
-  "web_accessible_resources": [{
-    "resources": ["icon16.png", "icon48.png", "icon128.png", "popup.css"],
-    "matches": ["<all_urls>"]
-  }]
+  }
 }

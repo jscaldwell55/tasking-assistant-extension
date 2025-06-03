@@ -1,14 +1,12 @@
-// Enhanced popup.js with configuration management
 
 let sourceTabs = [];
 let destTabs = [];
 let config = null;
-let presets = {};
 
-// Default configurations for common platforms
-const DEFAULT_PRESETS = {
-  'outlier-to-form': {
-    name: 'Outlier to Google Form',
+// Preset configurations
+const PRESETS = {
+  outlier: {
+    name: 'Outlier to Form',
     config: `SOURCE_TAB_NAME: Outlier
 DESTINATION_TAB_NAME: Submission Form
 
@@ -18,10 +16,21 @@ SOURCE -> DESTINATION
 3 -> 2
 4 -> 4`
   },
-  'feather-to-form': {
-    name: 'Feather to Google Form',
-    config: `SOURCE_TAB_NAME: Feather
+  scale: {
+    name: 'Scale to Form',
+    config: `SOURCE_TAB_NAME: Scale
 DESTINATION_TAB_NAME: Submission Form
+
+SOURCE -> DESTINATION
+1 -> 1
+2 -> 2
+3 -> 3
+4 -> 4`
+  },
+  custom: {
+    name: 'Custom Configuration',
+    config: `SOURCE_TAB_NAME: 
+DESTINATION_TAB_NAME: 
 
 SOURCE -> DESTINATION
 1 -> 1
@@ -31,370 +40,120 @@ SOURCE -> DESTINATION
   }
 };
 
-// Safe DOM element getter
-function getElement(id) {
-  const element = document.getElementById(id);
-  if (!element) {
-    console.warn(`Element with id "${id}" not found`);
-  }
-  return element;
-}
-
-// Initialize popup
+// Initialize popup when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Load saved data
-    const saved = await chrome.storage.local.get(['fieldMapping', 'presets', 'lastUsedPreset']);
+    // Load saved configuration
+    const saved = await chrome.storage.local.get(['fieldMapping', 'lastPreset']);
+    const configInput = document.getElementById('configInput');
     
-    // Initialize presets
-    presets = saved.presets || DEFAULT_PRESETS;
+    // Set initial configuration
+    if (saved.fieldMapping) {
+      configInput.value = saved.fieldMapping;
+    } else {
+      // Load default preset without button element
+      loadPreset('outlier', null);
+    }
     
-    // Set up tab switching
-    setupTabs();
-    
-    // Load configuration
-    const configInput = getElement('configInput');
-    if (configInput) {
-      if (saved.lastUsedPreset && presets[saved.lastUsedPreset]) {
-        configInput.value = presets[saved.lastUsedPreset].config;
-      } else {
-        configInput.value = saved.fieldMapping || DEFAULT_PRESETS['outlier-to-form'].config;
+    // Highlight last used preset
+    if (saved.lastPreset) {
+      document.querySelectorAll('.preset-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      const activeButton = document.querySelector(`[onclick*="${saved.lastPreset}"]`);
+      if (activeButton) {
+        activeButton.classList.add('active');
       }
     }
     
-    // Load presets list
-    loadPresetsList();
-    
-    // Parse and validate configuration
+    // Parse configuration and find tabs
     parseConfig();
-    
-    // Find matching tabs
     await findTabs();
     
     // Set up event listeners
     setupEventListeners();
+    
+    // Auto-refresh tabs periodically
+    setInterval(async () => {
+      await findTabs();
+    }, 2000);
   } catch (error) {
-    console.error('Error initializing popup:', error);
-    showStatus('Error initializing extension. Please refresh the page.', 'error');
+    console.error('Error during initialization:', error);
+    showStatus('Error initializing extension', 'error');
   }
 });
 
-// Set up tab switching functionality
-function setupTabs() {
-  try {
-    const tabs = document.querySelectorAll('.config-tab');
-    const contents = document.querySelectorAll('.config-content');
-    
-    if (!tabs.length || !contents.length) {
-      console.warn('Tab elements not found');
-      return;
-    }
-    
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        try {
-          // Remove active class from all
-          tabs.forEach(t => t.classList.remove('active'));
-          contents.forEach(c => c.classList.remove('active'));
-          
-          // Add active class to clicked tab
-          tab.classList.add('active');
-          const contentId = `${tab.dataset.tab}-tab`;
-          const content = document.getElementById(contentId);
-          if (content) {
-            content.classList.add('active');
-          }
-        } catch (error) {
-          console.error('Error switching tabs:', error);
-        }
-      });
-    });
-  } catch (error) {
-    console.error('Error setting up tabs:', error);
-  }
-}
-
-// Set up all event listeners
+// Set up event listeners
 function setupEventListeners() {
-  try {
-    const saveConfigBtn = getElement('saveConfig');
-    const copyButton = getElement('copyButton');
-    const configInput = getElement('configInput');
-    const loadConfigBtn = getElement('loadConfig');
-    
-    if (saveConfigBtn) {
-      saveConfigBtn.addEventListener('click', saveConfiguration);
-    }
-    if (copyButton) {
-      copyButton.addEventListener('click', copyFields);
-    }
-    if (configInput) {
-      configInput.addEventListener('input', parseConfig);
-    }
-    if (loadConfigBtn) {
-      loadConfigBtn.addEventListener('click', loadFromUrl);
-    }
-    
-    // Auto-refresh tabs when window gains focus
-    window.addEventListener('focus', async () => {
-      try {
-        await findTabs();
-      } catch (error) {
-        console.error('Error refreshing tabs:', error);
-      }
-    });
-  } catch (error) {
-    console.error('Error setting up event listeners:', error);
-  }
+  document.getElementById('saveConfig').addEventListener('click', saveConfiguration);
+  document.getElementById('clearConfig').addEventListener('click', clearConfiguration);
+  document.getElementById('copyButton').addEventListener('click', copyFields);
+  document.getElementById('configInput').addEventListener('input', () => {
+    parseConfig();
+    findTabs();
+  });
+  
+  // Make preset buttons work globally
+  window.loadPreset = loadPreset;
 }
 
-// Load configuration from URL (Google Docs, GitHub, etc.)
-async function loadFromUrl() {
-  try {
-    const urlInput = getElement('configUrl');
-    if (!urlInput) {
-      showStatus('Configuration URL input not found', 'error');
-      return;
-    }
-
-    const url = urlInput.value.trim();
-    if (!url) {
-      showStatus('Please enter a URL', 'error');
-      return;
-    }
-    
-    showStatus('Loading configuration...', 'info');
-    console.log('Attempting to load from URL:', url);
-    
-    let configText = '';
-    
-    // Handle Google Docs URLs
-    if (url.includes('docs.google.com')) {
-      // Extract document ID
-      const docId = url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-      if (!docId) {
-        throw new Error('Invalid Google Docs URL format. URL should contain /d/YOUR_DOC_ID/');
-      }
-      
-      // Try multiple methods
-      console.log('Detected Google Doc ID:', docId);
-      
-      // Method 1: Direct export URL
-      try {
-        const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
-        console.log('Trying export URL:', exportUrl);
-        
-        const response = await fetch(exportUrl, {
-          method: 'GET',
-          mode: 'cors',
-          credentials: 'omit'
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        
-        if (!response.ok) {
-          throw new Error(`Google Docs returned status ${response.status}`);
-        }
-        
-        configText = await response.text();
-        console.log('Successfully loaded config text length:', configText.length);
-        
-      } catch (exportError) {
-        console.error('Export URL failed:', exportError);
-        
-        // Show alternative solution
-        showStatus('Google Docs direct access failed. See console for alternatives.', 'error');
-        
-        console.log('\n=== ALTERNATIVE SOLUTIONS ===');
-        console.log('1. Make sure your Google Doc is set to "Anyone with the link can view"');
-        console.log('2. Try using Google Drive direct download:');
-        console.log('   - In Google Docs, go to File > Download > Plain Text (.txt)');
-        console.log('   - Upload the .txt file to Google Drive');
-        console.log('   - Right-click the file > Get link > Change to "Anyone with the link"');
-        console.log('   - Use the sharing link here');
-        console.log('\n3. Or use GitHub Gist:');
-        console.log('   - Go to gist.github.com');
-        console.log('   - Paste your configuration');
-        console.log('   - Create public gist');
-        console.log('   - Click "Raw" and use that URL');
-        
-        throw exportError;
-      }
-    }
-    // Handle GitHub URLs
-    else if (url.includes('github.com')) {
-      // Convert to raw URL if needed
-      const rawUrl = url.includes('raw.githubusercontent.com') 
-        ? url 
-        : url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
-      
-      console.log('Fetching from GitHub:', rawUrl);
-      const response = await fetch(rawUrl);
-      
-      if (!response.ok) {
-        throw new Error(`GitHub returned status ${response.status}`);
-      }
-      
-      configText = await response.text();
-    }
-    // Handle GitHub Gist URLs
-    else if (url.includes('gist.github.com')) {
-      // Convert to raw URL
-      const rawUrl = url.includes('/raw') ? url : url + '/raw';
-      console.log('Fetching from Gist:', rawUrl);
-      
-      const response = await fetch(rawUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Gist returned status ${response.status}`);
-      }
-      
-      configText = await response.text();
-    }
-    // Handle direct URLs (pastebin, etc)
-    else {
-      console.log('Fetching from direct URL:', url);
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
-      }
-      
-      configText = await response.text();
-    }
-    
-    // Validate we got some text
-    if (!configText || configText.trim().length === 0) {
-      throw new Error('No configuration text found at the URL');
-    }
-    
-    // Set the configuration
-    const configInput = getElement('configInput');
-    if (configInput) {
-      configInput.value = configText;
-      
-      // Parse and validate
-      if (!parseConfig()) {
-        throw new Error('Invalid configuration format in the loaded file');
-      }
-      
-      await findTabs();
-      
-      // Save the URL for future use
-      await chrome.storage.local.set({ lastConfigUrl: url });
-      
-      showStatus('Configuration loaded successfully!', 'success');
-      
-      // Switch to manual tab to show the loaded config
-      const manualTab = document.querySelector('[data-tab="manual"]');
-      if (manualTab) {
-        manualTab.click();
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load configuration:', error);
-    showStatus(`Failed to load: ${error.message}`, 'error');
+// Load a preset configuration
+function loadPreset(presetName, buttonElement) {
+  const preset = PRESETS[presetName];
+  if (!preset) return;
+  
+  // Update textarea
+  const configInput = document.getElementById('configInput');
+  if (configInput) {
+    configInput.value = preset.config;
   }
+  
+  // Update active button
+  document.querySelectorAll('.preset-button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Add active class to the button
+  if (buttonElement) {
+    buttonElement.classList.add('active');
+  } else {
+    // If no button element provided, find the matching button
+    const matchingButton = document.querySelector(`[onclick*="${presetName}"]`);
+    if (matchingButton) {
+      matchingButton.classList.add('active');
+    }
+  }
+  
+  // Save preset choice
+  chrome.storage.local.set({ lastPreset: presetName });
+  
+  // Parse and find tabs
+  parseConfig();
+  findTabs();
+  
+  showStatus(`Loaded ${preset.name} configuration`, 'info');
 }
 
-// Load presets list
-function loadPresetsList() {
-  try {
-    const presetList = getElement('presetList');
-    if (!presetList) return;
-    
-    presetList.innerHTML = '';
-    
-    Object.entries(presets).forEach(([key, preset]) => {
-      const presetItem = document.createElement('div');
-      presetItem.className = 'preset-item';
-      presetItem.textContent = preset.name;
-      presetItem.addEventListener('click', () => loadPreset(key));
-      presetList.appendChild(presetItem);
-    });
-    
-    // Add option to save current as preset
-    const savePresetBtn = document.createElement('button');
-    savePresetBtn.textContent = 'Save Current as Preset';
-    savePresetBtn.style.marginTop = '10px';
-    savePresetBtn.style.fontSize = '13px';
-    savePresetBtn.addEventListener('click', saveAsPreset);
-    presetList.appendChild(savePresetBtn);
-  } catch (error) {
-    console.error('Error loading presets list:', error);
-    showStatus('Error loading presets', 'error');
-  }
-}
-
-// Load a preset
-async function loadPreset(presetKey) {
-  try {
-    const preset = presets[presetKey];
-    if (!preset) return;
-    
-    const configInput = getElement('configInput');
-    if (configInput) {
-      configInput.value = preset.config;
-      parseConfig();
-      await findTabs();
-      
-      // Save as last used preset
-      await chrome.storage.local.set({ lastUsedPreset: presetKey });
-      
-      showStatus(`Loaded preset: ${preset.name}`, 'success');
-      
-      // Switch to manual tab
-      const manualTab = document.querySelector('[data-tab="manual"]');
-      if (manualTab) {
-        manualTab.click();
-      }
-    }
-  } catch (error) {
-    console.error('Error loading preset:', error);
-    showStatus('Error loading preset', 'error');
-  }
-}
-
-// Save current config as preset
-async function saveAsPreset() {
-  try {
-    const name = prompt('Enter a name for this preset:');
-    if (!name) return;
-    
-    const key = name.toLowerCase().replace(/\s+/g, '-');
-    const configInput = getElement('configInput');
-    if (!configInput) return;
-    
-    const configText = configInput.value;
-    
-    presets[key] = {
-      name: name,
-      config: configText
-    };
-    
-    await chrome.storage.local.set({ presets: presets });
-    loadPresetsList();
-    
-    showStatus(`Saved preset: ${name}`, 'success');
-  } catch (error) {
-    console.error('Error saving preset:', error);
-    showStatus('Error saving preset', 'error');
-  }
+// Clear configuration
+function clearConfiguration() {
+  document.getElementById('configInput').value = '';
+  parseConfig();
+  findTabs();
+  showStatus('Configuration cleared', 'info');
 }
 
 // Parse configuration from textarea
 function parseConfig() {
+  const configInput = document.getElementById('configInput');
+  if (!configInput) {
+    config = null;
+    return false;
+  }
+  
+  const configText = configInput.value;
+  const lines = configText.trim().split('\n').filter(line => line.trim());
+  
   try {
-    const configInput = getElement('configInput');
-    if (!configInput) {
-      showStatus('Configuration input not found', 'error');
-      return false;
-    }
-
-    const configText = configInput.value;
-    const lines = configText.trim().split('\n').filter(line => line.trim());
-    
     const newConfig = {
       sourceTabName: '',
       destTabName: '',
@@ -412,193 +171,277 @@ function parseConfig() {
         inMappingSection = true;
       } else if (inMappingSection && line.includes('->')) {
         const [source, dest] = line.split('->').map(s => s.trim());
-        newConfig.mappings.push({
-          source: parseInt(source),
-          dest: parseInt(dest)
-        });
+        const sourceNum = parseInt(source);
+        const destNum = parseInt(dest);
+        
+        if (!isNaN(sourceNum) && !isNaN(destNum)) {
+          newConfig.mappings.push({
+            source: sourceNum,
+            dest: destNum
+          });
+        }
       }
+    }
+    
+    // Validate configuration
+    if (!newConfig.sourceTabName || !newConfig.destTabName) {
+      config = null;
+      return false;
+    }
+    
+    if (newConfig.mappings.length === 0) {
+      config = null;
+      return false;
     }
     
     config = newConfig;
     return true;
   } catch (error) {
     console.error('Config parse error:', error);
-    showStatus('Invalid configuration format', 'error');
+    config = null;
     return false;
   }
 }
 
-// Save configuration to storage
+// Save configuration
 async function saveConfiguration() {
-  try {
-    const configInput = getElement('configInput');
-    if (!configInput) {
-      showStatus('Configuration input not found', 'error');
-      return;
-    }
-
-    const configText = configInput.value;
-    await chrome.storage.local.set({ fieldMapping: configText });
-    showStatus('Configuration saved!', 'success');
-    
-    // Re-parse and find tabs
-    if (parseConfig()) {
-      await findTabs();
-    }
-  } catch (error) {
-    console.error('Error saving configuration:', error);
-    showStatus('Error saving configuration', 'error');
-  }
-}
-
-// Find matching tabs based on configuration
-async function findTabs() {
-  if (!config) {
-    updateTabStatus('source', 'error', 'Invalid configuration');
-    updateTabStatus('dest', 'error', 'Invalid configuration');
+  const configInput = document.getElementById('configInput');
+  if (!configInput) return;
+  
+  const configText = configInput.value;
+  
+  if (!parseConfig()) {
+    showStatus('Invalid configuration format. Please check your input.', 'error');
     return;
   }
+  
+  await chrome.storage.local.set({ fieldMapping: configText });
+  showStatus('Configuration saved successfully!', 'success');
+  
+  // Find tabs again
+  await findTabs();
+}
 
+// Find matching tabs
+async function findTabs() {
+  if (!config) {
+    updateTabStatus('source', 'error', '⚠️', 'Invalid or missing configuration');
+    updateTabStatus('dest', 'error', '⚠️', 'Invalid or missing configuration');
+    const copyButton = document.getElementById('copyButton');
+    if (copyButton) {
+      copyButton.disabled = true;
+    }
+    return;
+  }
+  
   try {
-    // Get all tabs
+    // Query tabs with proper error handling
     const tabs = await chrome.tabs.query({});
     
-    // Find source tabs
+    if (!tabs || !Array.isArray(tabs)) {
+      throw new Error('Invalid response from browser tabs API');
+    }
+    
+    // Find source tabs with case-insensitive matching
     sourceTabs = tabs.filter(tab => 
       tab.title && tab.title.toLowerCase().includes(config.sourceTabName.toLowerCase())
     );
     
-    // Find destination tabs
+    // Find destination tabs with case-insensitive matching
     destTabs = tabs.filter(tab => 
       tab.title && tab.title.toLowerCase().includes(config.destTabName.toLowerCase())
     );
     
-    // Update UI based on matches
+    // Update source tab status
     if (sourceTabs.length === 0) {
-      updateTabStatus('source', 'error', `No tabs found matching "${config.sourceTabName}"`);
-    } else if (sourceTabs.length > 1) {
-      updateTabStatus('source', 'error', `Multiple tabs found matching "${config.sourceTabName}". Please close duplicate tabs.`);
+      updateTabStatus('source', 'error', '❌', `No tabs found matching "${config.sourceTabName}"`);
+    } else if (sourceTabs.length === 1) {
+      updateTabStatus('source', 'success', '✅', `Found: ${truncateTitle(sourceTabs[0].title)}`);
     } else {
-      updateTabStatus('source', 'success', `Found source tab: ${sourceTabs[0].title}`);
+      updateTabStatus('source', 'error', '⚠️', `${sourceTabs.length} tabs found - please close duplicates`);
     }
     
+    // Update destination tab status
     if (destTabs.length === 0) {
-      updateTabStatus('dest', 'error', `No tabs found matching "${config.destTabName}"`);
-    } else if (destTabs.length > 1) {
-      updateTabStatus('dest', 'error', `Multiple tabs found matching "${config.destTabName}". Please close duplicate tabs.`);
+      updateTabStatus('dest', 'error', '❌', `No tabs found matching "${config.destTabName}"`);
+    } else if (destTabs.length === 1) {
+      updateTabStatus('dest', 'success', '✅', `Found: ${truncateTitle(destTabs[0].title)}`);
     } else {
-      updateTabStatus('dest', 'success', `Found destination tab: ${destTabs[0].title}`);
+      updateTabStatus('dest', 'error', '⚠️', `${destTabs.length} tabs found - please close duplicates`);
     }
     
-    // Enable/disable copy button based on tab matches
-    const copyButton = getElement('copyButton');
+    // Enable/disable copy button
+    const canCopy = sourceTabs.length === 1 && destTabs.length === 1;
+    const copyButton = document.getElementById('copyButton');
     if (copyButton) {
-      copyButton.disabled = sourceTabs.length !== 1 || destTabs.length !== 1;
+      copyButton.disabled = !canCopy;
+      
+      // Update button text
+      const copyButtonText = document.getElementById('copyButtonText');
+      if (copyButtonText) {
+        copyButtonText.textContent = canCopy ? 
+          `COPY ${config.mappings.length} FIELDS` : 
+          'COPY FIELDS';
+      }
     }
+    
   } catch (error) {
     console.error('Error finding tabs:', error);
-    updateTabStatus('source', 'error', 'Error finding tabs');
-    updateTabStatus('dest', 'error', 'Error finding tabs');
+    updateTabStatus('source', 'error', '❌', 'Error accessing tabs');
+    updateTabStatus('dest', 'error', '❌', 'Error accessing tabs');
+    
+    const copyButton = document.getElementById('copyButton');
+    if (copyButton) {
+      copyButton.disabled = true;
+    }
   }
 }
 
-// Update tab status in UI
-function updateTabStatus(type, status, message) {
-  try {
-    const element = getElement(`${type}Status`);
-    if (element) {
-      element.className = `tab-info ${status}`;
-      element.textContent = message;
-    }
-  } catch (error) {
-    console.error(`Error updating ${type} status:`, error);
-  }
+// Update tab status display
+function updateTabStatus(type, status, icon, message) {
+  const element = document.getElementById(`${type}Status`);
+  if (!element) return;
+  
+  element.className = `tab-status ${status}`;
+  element.innerHTML = `
+    <span class="status-icon">${icon}</span>
+    <span>${message}</span>
+  `;
+}
+
+// Truncate long titles
+function truncateTitle(title, maxLength = 40) {
+  if (!title) return '';
+  if (title.length <= maxLength) return title;
+  return title.substring(0, maxLength) + '...';
 }
 
 // Copy fields from source to destination
 async function copyFields() {
-  if (sourceTabs.length !== 1 || destTabs.length !== 1) {
+  if (!config || sourceTabs.length !== 1 || destTabs.length !== 1) {
     showStatus('Please ensure exactly one source and one destination tab are found', 'error');
     return;
   }
-
+  
+  const copyButton = document.getElementById('copyButton');
+  const copyButtonText = document.getElementById('copyButtonText');
+  const originalText = copyButtonText ? copyButtonText.textContent : 'COPY FIELDS';
+  
   try {
-    showStatus('Copying fields...', 'info');
+    // Update button to show progress
+    copyButton.disabled = true;
+    if (copyButtonText) {
+      copyButtonText.textContent = 'Copying...';
+    }
+    
+    // First, ensure content script is injected in source tab
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: sourceTabs[0].id },
+        files: ['content.js']
+      });
+    } catch (e) {
+      // Script might already be injected, that's okay
+      console.log('Content script injection attempted:', e.message);
+    }
+    
+    // Wait a moment for script to initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Extract fields from source tab
-    const sourceFields = await extractFieldsFromTab(sourceTabs[0].id);
-    if (!sourceFields.success) {
-      showStatus(`Error extracting fields: ${sourceFields.error}`, 'error');
-      return;
+    const sourceData = await chrome.tabs.sendMessage(sourceTabs[0].id, {
+      action: 'extractFields',
+      fieldNumbers: config.mappings.map(m => m.source)
+    }).catch(error => {
+      console.error('Failed to communicate with source tab:', error);
+      throw new Error('Could not connect to source tab. Please refresh the page and try again.');
+    });
+    
+    if (!sourceData || !sourceData.success) {
+      throw new Error(sourceData?.error || 'Failed to extract fields from source tab');
     }
     
     // Map fields according to configuration
-    const mappedFields = mapFields(sourceFields.fields);
+    const mappedData = {};
+    let mappedCount = 0;
+    
+    config.mappings.forEach(mapping => {
+      if (sourceData.fields && sourceData.fields[mapping.source] !== undefined) {
+        mappedData[mapping.dest] = sourceData.fields[mapping.source];
+        mappedCount++;
+      }
+    });
+    
+    if (mappedCount === 0) {
+      throw new Error('No fields could be extracted. Make sure the source page has input fields.');
+    }
+    
+    // Ensure content script is injected in destination tab
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: destTabs[0].id },
+        files: ['content.js']
+      });
+    } catch (e) {
+      // Script might already be injected
+      console.log('Content script injection attempted:', e.message);
+    }
+    
+    // Wait a moment for script to initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Fill fields in destination tab
-    const fillResult = await fillFieldsInTab(destTabs[0].id, mappedFields);
-    if (!fillResult.success) {
-      showStatus(`Error filling fields: ${fillResult.error}`, 'error');
-      return;
-    }
-    
-    showStatus('Fields copied successfully!', 'success');
-    
-  } catch (error) {
-    console.error('Error copying fields:', error);
-    showStatus('Error copying fields. Please try again.', 'error');
-  }
-}
-
-// Extract fields from a tab
-async function extractFieldsFromTab(tabId) {
-  try {
-    const fieldNumbers = config.mappings.map(m => m.source);
-    const response = await chrome.tabs.sendMessage(tabId, {
-      action: 'extractFields',
-      fieldNumbers: fieldNumbers
-    });
-    return response;
-  } catch (error) {
-    console.error('Error extracting fields:', error);
-    return { success: false, error: 'Failed to extract fields from source tab' };
-  }
-}
-
-// Map fields according to configuration
-function mapFields(sourceFields) {
-  const mappedFields = {};
-  config.mappings.forEach(mapping => {
-    if (sourceFields[mapping.source] !== undefined) {
-      mappedFields[mapping.dest] = sourceFields[mapping.source];
-    }
-  });
-  return mappedFields;
-}
-
-// Fill fields in a tab
-async function fillFieldsInTab(tabId, fields) {
-  try {
-    const response = await chrome.tabs.sendMessage(tabId, {
+    const result = await chrome.tabs.sendMessage(destTabs[0].id, {
       action: 'fillFields',
-      fields: fields
+      fields: mappedData
+    }).catch(error => {
+      console.error('Failed to communicate with destination tab:', error);
+      throw new Error('Could not connect to destination tab. Please refresh the page and try again.');
     });
-    return response;
+    
+    if (!result || !result.success) {
+      throw new Error(result?.error || 'Failed to fill fields in destination tab');
+    }
+    
+    // Success!
+    showStatus(`Successfully copied ${mappedCount} fields!`, 'success');
+    
+    // Flash success on button
+    copyButton.style.background = '#28a745';
+    if (copyButtonText) {
+      copyButtonText.textContent = `✅ Copied ${mappedCount} fields!`;
+    }
+    
+    setTimeout(() => {
+      copyButton.style.background = '';
+      if (copyButtonText) {
+        copyButtonText.textContent = originalText;
+      }
+      copyButton.disabled = false;
+    }, 2000);
+    
   } catch (error) {
-    console.error('Error filling fields:', error);
-    return { success: false, error: 'Failed to fill fields in destination tab' };
+    console.error('Copy error:', error);
+    showStatus(`Error: ${error.message}`, 'error');
+    
+    // Reset button
+    if (copyButtonText) {
+      copyButtonText.textContent = originalText;
+    }
+    copyButton.disabled = false;
   }
 }
 
 // Show status message
 function showStatus(message, type) {
-  try {
-    const statusElement = getElement('statusMessage');
-    if (statusElement) {
-      statusElement.className = `status ${type}`;
-      statusElement.textContent = message;
-    }
-  } catch (error) {
-    console.error('Error showing status:', error);
-  }
+  const statusElement = document.getElementById('statusMessage');
+  if (!statusElement) return;
+  
+  statusElement.textContent = message;
+  statusElement.className = `status-message show ${type}`;
+  
+  // Auto-hide after 3 seconds
+  setTimeout(() => {
+    statusElement.classList.remove('show');
+  }, 3000);
 }
