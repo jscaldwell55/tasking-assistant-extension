@@ -45,7 +45,7 @@ The configuration is now saved and ready to use
 
 USAGE
 
-Daily Workflow
+Workflow
 
 Open the source tab (e.g., Outlier, Feather)
 Complete your task on the platform
