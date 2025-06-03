@@ -33,7 +33,7 @@ Share the Google Doc with view permissions for your team
 Copy the shareable link to distribute to contributors
 
 
-For Contributors
+USAGE
 
 Install the extension following the setup steps above
 Get the configuration Google Doc URL from your CL
@@ -41,7 +41,6 @@ Click the extension icon and go to "Load from URL" tab
 Paste the Google Doc URL and click "Load Configuration"
 The configuration is now saved and ready to use
 
-USAGE
 
 Workflow
 
