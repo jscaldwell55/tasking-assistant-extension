@@ -1,11 +1,7 @@
-Tasking Assistant Chrome Extension
-A Chrome extension that copies fields between browser tabs using simple, shareable text configurations. Perfect for teams working with tasking platforms (Outlier, Feather, Scale) who need to submit data to forms.
-🎯 What It Does
-This extension automates the tedious copy-paste workflow between tasking platforms and submission forms. Instead of manually copying each field, you:
+Tasking Assistant Extension
+<br>
+A Chrome extension that copies fields between browser tabs using shareable text configurations. 
 
-Configure the field mappings once
-Click a button to copy all fields instantly
-Save hours of repetitive work
 
 🚀 Quick Start
 Installation (One-Time Setup)
