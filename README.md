@@ -6,13 +6,11 @@ OVERVIEW
 
 This extension allows:
 
-Configuration Leads (CLs) to define field mappings in a Google Doc
 Contributors to automatically copy data from tasking platforms to submission forms
-Teams to share one configuration across hundreds of users
+Team to share one configuration across hundreds of users
 
-SETUP
+SETUP (PROTOTYPE)
 
-For All Users
 
 Clone this repo or download the extension files
 In Chrome, go to chrome://extensions
@@ -20,7 +18,6 @@ Enable Developer Mode (toggle in top right)
 Click "Load unpacked" and select the extension folder
 Pin the extension to your toolbar for easy access
 
-For Central Config
 
 Create a Google Doc with your field mapping configuration:
 SOURCE_TAB_NAME: Outlier
@@ -34,6 +31,7 @@ SOURCE -> DESTINATION
 
 Share the Google Doc with view permissions for your team
 Copy the shareable link to distribute to contributors
+
 
 For Contributors
 
@@ -58,8 +56,9 @@ Submit the form
 Configuration Methods
 
 The extension supports three ways to configure field mappings:
-1. Google Docs URL (Recommended for Teams)
 
+1. Google Docs URL (Recommended for Teams)
+   
 Maintain a central Google Doc
 Contributors load configuration via URL
 Updates are centralized - change once, update everyone
@@ -91,6 +90,8 @@ Fields are numbered sequentially:
 Field 1 = First input/textarea element
 Field 2 = Second input/textarea element
 And so on...
+
+
 
 NOTES
 
