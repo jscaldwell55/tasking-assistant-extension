@@ -1,28 +1,39 @@
 Tasking Assistant Chrome Extension
+A Chrome extension that copies fields between browser tabs using simple, shareable text configurations. Perfect for teams working with tasking platforms (Outlier, Feather, Scale) who need to submit data to forms.
+🎯 What It Does
+This extension automates the tedious copy-paste workflow between tasking platforms and submission forms. Instead of manually copying each field, you:
 
-A Chrome extension that automates copying fields between browser tabs using centralized configuration via Google Docs. 
+Configure the field mappings once
+Click a button to copy all fields instantly
+Save hours of repetitive work
 
-I. OVERVIEW
+🚀 Quick Start
+Installation (One-Time Setup)
 
-This extension allows:
+Download the extension files
 
-Users to automatically copy data from tasking platforms to submission forms
-
-Team to share one configuration across hundreds of users
-
-II. SETUP (PROTOTYPE)
+Clone this repo or download as ZIP
+Extract to a folder on your computer
 
 
-Clone this repo or download the extension files
-In Chrome, go to chrome://extensions
+Install in Chrome
+
+Open Chrome and go to chrome://extensions/
 Enable Developer Mode (toggle in top right)
-Click "Load unpacked" and select the extension folder
-Pin the extension to your toolbar for easy access
+Click "Load unpacked"
+Select the extension folder
+Pin the extension icon to your toolbar 📌
 
 
-Create a Google Doc with your field mapping configuration:
+
+Your First Copy
+
+Open your source page (e.g., Outlier platform)
+Open your destination form (e.g., Google Form)
+Click the extension icon in your toolbar
+Paste this example configuration:
 SOURCE_TAB_NAME: Outlier
-DESTINATION_TAB_NAME: Q4 Submission Form
+DESTINATION_TAB_NAME: Submission Form
 
 SOURCE -> DESTINATION
 1 -> 1
@@ -30,108 +41,149 @@ SOURCE -> DESTINATION
 3 -> 2
 4 -> 4
 
-Share the Google Doc with view permissions for your team
-Copy the shareable link to distribute to contributors
+Click "Save Configuration"
+See the green checkmarks ✅? Click "COPY FIELDS"
+Check your form - fields are filled! 🎉
 
-
-III. USAGE
-
-Users install the extension following the setup steps above
-Get the configuration Google Doc URL from your CL
-Click the extension icon and go to "Load from URL" tab
-Paste the Google Doc URL and click "Load Configuration"
-The configuration is now saved and ready to use
-
-
-Workflow:
-
-Open the source tab (e.g., Outlier, Feather)
-Complete your task on the platform
-Open the destination tab (e.g., Google Form)
-Click the Tasking Assistant extension icon
-Verify both tabs show green checkmarks
-Click "COPY FIELDS" to transfer your data
-Submit the form
-
-Configuration Methods:
-
-The extension supports three ways to configure field mappings:
-
-1. Google Docs URL (Recommended for Teams)
-   
-Maintain a central Google Doc
-Contributors load configuration via URL
-Updates are centralized - change once, update everyone
-
-2. Manual Configuration
-
-Edit mappings directly in the extension
-Good for individual users or testing
-Saved locally to your browser
-
-3. Saved Presets
-
-Save frequently used configurations
-Quick switching between projects
-Share preset configurations with team
-
-Configuration Format:
-
-SOURCE_TAB_NAME: [Part of source tab title]
-DESTINATION_TAB_NAME: [Part of destination tab title]
+📋 Configuration Guide
+Understanding Field Mappings
+The configuration tells the extension which fields to copy and where to put them:
+SOURCE_TAB_NAME: [text that appears in source tab title]
+DESTINATION_TAB_NAME: [text that appears in destination tab title]
 
 SOURCE -> DESTINATION
-[source field #] -> [destination field #]
-[source field #] -> [destination field #]
-...
-Field Numbering
-Fields are numbered sequentially:
+[source field number] -> [destination field number]
+How Fields Are Numbered
+Fields are counted in order of appearance:
 
-Field 1 = First input/textarea element
-Field 2 = Second input/textarea element
+Field 1 = First input/text box on the page
+Field 2 = Second input/text box on the page
 And so on...
 
+Example: If you want to copy the 3rd field from your source to the 2nd field in your form:
+3 -> 2
+Real-World Example
+Let's say you're copying from Outlier to a Google Form:
+
+Outlier has: Name (1), Email (2), Task Response (3), Quality Score (4)
+Form wants: Email (1), Quality Score (2), Name (3), Task Response (4)
+
+Your configuration:
+SOURCE_TAB_NAME: Outlier
+DESTINATION_TAB_NAME: Google Forms
+
+SOURCE -> DESTINATION
+1 -> 3
+2 -> 1
+3 -> 4
+4 -> 2
+👥 Team Workflow
+For Team Leads
+
+Create the configuration for your project
+Test it using the extension
+Share via Slack/Email:
+Team: Here's the config for Project X
+Copy everything between the lines:
+-----------
+SOURCE_TAB_NAME: Outlier
+DESTINATION_TAB_NAME: Project X Form
+
+SOURCE -> DESTINATION
+1 -> 1
+2 -> 3
+3 -> 2
+4 -> 4
+-----------
 
 
+For Team Members
 
+Copy the configuration from Slack/Email
+Open the extension
+Paste in the text box
+Click "Save Configuration"
+Start copying fields with one click!
 
-IV. NOTES
+🎨 Using Presets
+The extension includes preset buttons for common platforms:
 
-Important Limitations
+Outlier → Form: Click this if you're using Outlier
+Scale → Form: Click this if you're using Scale
+Custom: Start with a blank template
 
-If multiple matching tabs are open, the COPY button will be disabled
-Only one source and one destination tab can be open at a time
-The extension matches tabs by partial title text
+After selecting a preset, just update the tab names to match your actual tabs.
+🔧 Troubleshooting
+"No tabs found matching..."
 
-Troubleshooting
+Make sure your configuration tab names match what's in your browser
+The match is partial - "Outlier" will match "Outlier - Task 123"
+Check for typos in your configuration
 
-"No fields found" error
+"No fields could be extracted"
 
-The page structure might be different than expected
-Check browser console for detected fields
-Contact your CL to update mappings
+Refresh the source page (Ctrl+R or Cmd+R)
+Make sure the page is fully loaded
+Check that fields have values to copy
 
-Multiple tabs detected
+"Multiple tabs found"
 
-Close duplicate tabs with similar titles
-Ensure only one source and one destination tab are open
+Close duplicate tabs
+Keep only one source and one destination tab open
 
-Configuration won't load
+Copy button is disabled
 
-Verify the Google Doc is publicly viewable
-Check that the URL is a valid Google Docs link
-Try using manual configuration as fallback
+Need exactly ONE source tab and ONE destination tab
+Both must match your configuration
+Check the status indicators for details
 
-Google Doc Config Tip
+💡 Pro Tips
 
-Use the manual configuration tab to test mappings
-Once verified, copy to Google Doc for team distribution
+Test First: Always test with one record before doing bulk work
+Save Common Configs: Use meaningful names when sharing configs
+Field Discovery: Not sure which field is which? Try copying one at a time:
+SOURCE -> DESTINATION
+1 -> 1
+Then test fields 2, 3, 4, etc.
+Quick Updates: The extension checks for tabs every 2 seconds, so changes appear quickly
 
+🛡️ Privacy & Security
 
+✅ All data stays in your browser
+✅ No external servers or data collection
+✅ Configuration stored locally
+✅ Only accesses tabs you explicitly configure
 
-V. DEV NOTES
+📝 Example Configurations
+Outlier to Google Form
+SOURCE_TAB_NAME: Outlier
+DESTINATION_TAB_NAME: Task Submission
 
-manifest.json - Extension configuration
-popup.html/js - Main UI and configuration logic
-content.js - Field extraction and filling logic
-background.js - Service worker for tab management
+SOURCE -> DESTINATION
+1 -> 1
+2 -> 3
+3 -> 2
+4 -> 4
+Scale AI to Internal Form
+SOURCE_TAB_NAME: Scale
+DESTINATION_TAB_NAME: Quality Review
+
+SOURCE -> DESTINATION
+1 -> 2
+2 -> 4
+3 -> 1
+4 -> 3
+5 -> 5
+Multi-Field Project
+SOURCE_TAB_NAME: Feather
+DESTINATION_TAB_NAME: Data Collection
+
+SOURCE -> DESTINATION
+1 -> 1
+2 -> 2
+3 -> 5
+4 -> 3
+5 -> 4
+6 -> 6
+7 -> 8
+8 -> 7
