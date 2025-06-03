@@ -1,4 +1,4 @@
-Tasking Assistant Extension
+
 <br>
 A Chrome extension that copies fields between browser tabs using shareable text configurations. 
 
