@@ -164,38 +164,121 @@ async function loadFromUrl() {
     }
     
     showStatus('Loading configuration...', 'info');
+    console.log('Attempting to load from URL:', url);
     
     let configText = '';
     
     // Handle Google Docs URLs
     if (url.includes('docs.google.com')) {
-      // Convert to export URL
+      // Extract document ID
       const docId = url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-      if (docId) {
-        const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
-        const response = await fetch(exportUrl);
-        configText = await response.text();
+      if (!docId) {
+        throw new Error('Invalid Google Docs URL format. URL should contain /d/YOUR_DOC_ID/');
       }
-    } 
-    // Handle GitHub raw URLs
+      
+      // Try multiple methods
+      console.log('Detected Google Doc ID:', docId);
+      
+      // Method 1: Direct export URL
+      try {
+        const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=txt`;
+        console.log('Trying export URL:', exportUrl);
+        
+        const response = await fetch(exportUrl, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'omit'
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+          throw new Error(`Google Docs returned status ${response.status}`);
+        }
+        
+        configText = await response.text();
+        console.log('Successfully loaded config text length:', configText.length);
+        
+      } catch (exportError) {
+        console.error('Export URL failed:', exportError);
+        
+        // Show alternative solution
+        showStatus('Google Docs direct access failed. See console for alternatives.', 'error');
+        
+        console.log('\n=== ALTERNATIVE SOLUTIONS ===');
+        console.log('1. Make sure your Google Doc is set to "Anyone with the link can view"');
+        console.log('2. Try using Google Drive direct download:');
+        console.log('   - In Google Docs, go to File > Download > Plain Text (.txt)');
+        console.log('   - Upload the .txt file to Google Drive');
+        console.log('   - Right-click the file > Get link > Change to "Anyone with the link"');
+        console.log('   - Use the sharing link here');
+        console.log('\n3. Or use GitHub Gist:');
+        console.log('   - Go to gist.github.com');
+        console.log('   - Paste your configuration');
+        console.log('   - Create public gist');
+        console.log('   - Click "Raw" and use that URL');
+        
+        throw exportError;
+      }
+    }
+    // Handle GitHub URLs
     else if (url.includes('github.com')) {
       // Convert to raw URL if needed
-      const rawUrl = url.replace('github.com', 'raw.githubusercontent.com')
-                        .replace('/blob/', '/');
+      const rawUrl = url.includes('raw.githubusercontent.com') 
+        ? url 
+        : url.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+      
+      console.log('Fetching from GitHub:', rawUrl);
       const response = await fetch(rawUrl);
+      
+      if (!response.ok) {
+        throw new Error(`GitHub returned status ${response.status}`);
+      }
+      
       configText = await response.text();
     }
-    // Handle direct URLs
-    else {
-      const response = await fetch(url);
+    // Handle GitHub Gist URLs
+    else if (url.includes('gist.github.com')) {
+      // Convert to raw URL
+      const rawUrl = url.includes('/raw') ? url : url + '/raw';
+      console.log('Fetching from Gist:', rawUrl);
+      
+      const response = await fetch(rawUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Gist returned status ${response.status}`);
+      }
+      
       configText = await response.text();
+    }
+    // Handle direct URLs (pastebin, etc)
+    else {
+      console.log('Fetching from direct URL:', url);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+      
+      configText = await response.text();
+    }
+    
+    // Validate we got some text
+    if (!configText || configText.trim().length === 0) {
+      throw new Error('No configuration text found at the URL');
     }
     
     // Set the configuration
     const configInput = getElement('configInput');
     if (configInput) {
       configInput.value = configText;
-      parseConfig();
+      
+      // Parse and validate
+      if (!parseConfig()) {
+        throw new Error('Invalid configuration format in the loaded file');
+      }
+      
       await findTabs();
       
       // Save the URL for future use
@@ -211,7 +294,7 @@ async function loadFromUrl() {
     }
   } catch (error) {
     console.error('Failed to load configuration:', error);
-    showStatus('Failed to load configuration. Check the URL and try again.', 'error');
+    showStatus(`Failed to load: ${error.message}`, 'error');
   }
 }
 

@@ -10,8 +10,8 @@
     "scripting"
   ],
   "host_permissions": [
-    "http://*/*",
-    "https://*/*"
+  "https://docs.google.com/*",
+  "https://*.google.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
