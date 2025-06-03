@@ -56,6 +56,7 @@ Click "COPY FIELDS" to transfer your data
 Submit the form
 
 Configuration Methods
+
 The extension supports three ways to configure field mappings:
 1. Google Docs URL (Recommended for Teams)
 
@@ -75,7 +76,7 @@ Save frequently used configurations
 Quick switching between projects
 Share preset configurations with team
 
-CONFIG FORMAT
+Configuration Format
 
 SOURCE_TAB_NAME: [Part of source tab title]
 DESTINATION_TAB_NAME: [Part of destination tab title]
