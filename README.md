@@ -124,14 +124,6 @@ Use the manual configuration tab to test mappings
 Once verified, copy to Google Doc for team distribution
 
 
-CONTRIBUTING
-
-To contribute to this extension:
-
-Fork the repository
-Create a feature branch
-Test thoroughly with various form types
-Submit a pull request
 
 DEV NOTES
 
