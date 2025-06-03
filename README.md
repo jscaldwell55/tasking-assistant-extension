@@ -2,14 +2,14 @@ Tasking Assistant Chrome Extension
 
 A Chrome extension that automates copying fields between browser tabs using centralized configuration via Google Docs. 
 
-OVERVIEW
+I. OVERVIEW
 
 This extension allows:
 
 Contributors to automatically copy data from tasking platforms to submission forms
 Team to share one configuration across hundreds of users
 
-SETUP (PROTOTYPE)
+II. SETUP (PROTOTYPE)
 
 
 Clone this repo or download the extension files
@@ -33,7 +33,7 @@ Share the Google Doc with view permissions for your team
 Copy the shareable link to distribute to contributors
 
 
-USAGE
+III. USAGE
 
 Install the extension following the setup steps above
 Get the configuration Google Doc URL from your CL
@@ -92,7 +92,7 @@ And so on...
 
 
 
-NOTES
+IV. NOTES
 
 Important Limitations
 
@@ -125,7 +125,7 @@ Once verified, copy to Google Doc for team distribution
 
 
 
-DEV NOTES
+V. DEV NOTES
 
 manifest.json - Extension configuration
 popup.html/js - Main UI and configuration logic
