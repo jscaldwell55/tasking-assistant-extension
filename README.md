@@ -1,7 +1,5 @@
-
-<br>
 A Chrome extension that copies fields between browser tabs using shareable text configurations. 
-
+<br>
 
 🚀 Quick Start
 Installation (One-Time Setup)
