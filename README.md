@@ -7,6 +7,7 @@ I. OVERVIEW
 This extension allows:
 
 Users to automatically copy data from tasking platforms to submission forms
+
 Team to share one configuration across hundreds of users
 
 II. SETUP (PROTOTYPE)
