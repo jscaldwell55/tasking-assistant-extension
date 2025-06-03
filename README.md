@@ -6,7 +6,7 @@ I. OVERVIEW
 
 This extension allows:
 
-Contributors to automatically copy data from tasking platforms to submission forms
+Users to automatically copy data from tasking platforms to submission forms
 Team to share one configuration across hundreds of users
 
 II. SETUP (PROTOTYPE)
@@ -35,14 +35,14 @@ Copy the shareable link to distribute to contributors
 
 III. USAGE
 
-Install the extension following the setup steps above
+Users install the extension following the setup steps above
 Get the configuration Google Doc URL from your CL
 Click the extension icon and go to "Load from URL" tab
 Paste the Google Doc URL and click "Load Configuration"
 The configuration is now saved and ready to use
 
 
-Workflow
+Workflow:
 
 Open the source tab (e.g., Outlier, Feather)
 Complete your task on the platform
@@ -52,7 +52,7 @@ Verify both tabs show green checkmarks
 Click "COPY FIELDS" to transfer your data
 Submit the form
 
-Configuration Methods
+Configuration Methods:
 
 The extension supports three ways to configure field mappings:
 
@@ -74,7 +74,7 @@ Save frequently used configurations
 Quick switching between projects
 Share preset configurations with team
 
-Configuration Format
+Configuration Format:
 
 SOURCE_TAB_NAME: [Part of source tab title]
 DESTINATION_TAB_NAME: [Part of destination tab title]
@@ -101,6 +101,7 @@ Only one source and one destination tab can be open at a time
 The extension matches tabs by partial title text
 
 Troubleshooting
+
 "No fields found" error
 
 The page structure might be different than expected
